@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+
+  app:
+    image: otus-notification-app
+    container_name: otus-notification-app
+    build:
+      context: .
+      target: app
+      args:
+        - GOLANG_VERSION
+    ports:
+      - "8000:${PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - "./:/app"
+    working_dir: "/app"
+    command: ["application"]
+    restart: unless-stopped
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    profiles:
+      - app
+    networks:
+      otus-notification:
+        aliases:
+          - app
+
+networks:
+  otus-notification:
