@@ -9,8 +9,8 @@ import (
 
 //easyjson:json
 type EventSendParams struct {
-	Name  string `json:"name"`
-	Event string `json:"event"`
+	Name string `json:"name"`
+	Data string `json:"data"`
 }
 
 func NewEventSendParamsFromRequest(request *http.Request) (*EventSendParams, error) {
