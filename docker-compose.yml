@@ -13,7 +13,7 @@ services:
     ports:
       - "8000:${PORT}"
     depends_on:
-      db:
+      kafka:
         condition: service_healthy
     env_file:
       - .env
@@ -34,6 +34,82 @@ services:
       otus-notification:
         aliases:
           - app
+
+  zookeeper:
+    container_name: otus-notification-zookeeper
+    image: bitnami/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    profiles:
+      - app
+      - dependencies
+    healthcheck:
+      test: "nc -z localhost 2181 || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      otus-notification:
+        aliases:
+          - zookeeper
+
+  kafka:
+    container_name: otus-notification-kafka
+    image: bitnami/kafka:latest
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_ENABLE_KRAFT: no
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_LISTENERS: CLIENT://:9092,EXTERNAL://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://otus-notification-kafka:9092,EXTERNAL://localhost:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      ALLOW_PLAINTEXT_LISTENER: yes
+    profiles:
+      - app
+      - dependencies
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list" ]
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      otus-notification:
+        aliases:
+          - kafka
+
+  init-kafka:
+    image: bitnami/kafka:latest
+    profiles:
+      - app
+      - dependencies
+    depends_on:
+      - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics.sh --bootstrap-server otus-notification-kafka:9092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics.sh --bootstrap-server otus-notification-kafka:9092 --create --if-not-exists --topic otus.recipe.update --replication-factor 1 --partitions 3
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics.sh --bootstrap-server otus-notification-kafka:9092 --list
+      "
+    networks:
+      otus-notification:
+        aliases:
+          - init-kafka
 
 networks:
   otus-notification:

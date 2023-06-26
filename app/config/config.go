@@ -11,6 +11,7 @@ type Config struct {
 	BindAddress string `envconfig:"optional"`
 	Port        string `envconfig:"PORT"`
 	Debug       bool   `envconfig:"DEBUG"`
+	Kafka       Kafka
 }
 
 func NewConfig() (*Config, error) {

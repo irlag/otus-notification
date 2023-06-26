@@ -1,7 +1,9 @@
 package processors
 
 import (
+	"otus-notification/app/models"
 	"otus-notification/app/processors/event"
+	kafkaStorage "otus-notification/app/storage/kafka"
 )
 
 type Processors struct {
@@ -9,9 +11,9 @@ type Processors struct {
 	EventProcessor       event.Event
 }
 
-func NewProcessor() *Processors {
+func NewProcessor(kafkaWriter kafkaStorage.Writer[models.Notification]) *Processors {
 	return &Processors{
 		HealthcheckProcessor: NewHealtcheckProcessor(),
-		EventProcessor:       event.NewEventProcessor(),
+		EventProcessor:       event.NewEventProcessor(kafkaWriter),
 	}
 }
