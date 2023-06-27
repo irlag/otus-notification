@@ -1,6 +1,8 @@
 package processors
 
 import (
+	"go.uber.org/zap"
+
 	"otus-notification/app/models"
 	"otus-notification/app/processors/event"
 	kafkaStorage "otus-notification/app/storage/kafka"
@@ -11,9 +13,12 @@ type Processors struct {
 	EventProcessor       event.Event
 }
 
-func NewProcessor(kafkaWriter kafkaStorage.Writer[models.Notification]) *Processors {
+func NewProcessor(
+	kafkaWriter kafkaStorage.Writer[models.Notification],
+	logger *zap.Logger,
+) *Processors {
 	return &Processors{
 		HealthcheckProcessor: NewHealtcheckProcessor(),
-		EventProcessor:       event.NewEventProcessor(kafkaWriter),
+		EventProcessor:       event.NewEventProcessor(kafkaWriter, logger),
 	}
 }

@@ -13,10 +13,11 @@ import (
 )
 
 type Container struct {
-	Config     *config.Config
-	Log        *zap.Logger
-	Processors *appProcessors.Processors
-	Services   *services.Services
+	Config                   *config.Config
+	Log                      *zap.Logger
+	Processors               *appProcessors.Processors
+	Services                 *services.Services
+	RecipeNotificationReader kafka.Reader[models.RecipeNotification]
 }
 
 func NewContainer(cfg *config.Config) *Container {
@@ -25,14 +26,25 @@ func NewContainer(cfg *config.Config) *Container {
 		logger.Fatal("can't initialize zap logger", zap.Error(err))
 	}
 
-	kafkaRecipeWriter, _ := kafka.NewWriter[models.Notification](cfg.Kafka.ZookeeperHosts)
+	kafkaNotificationWriter, _ := kafka.NewWriter[models.Notification](cfg.Kafka.Hosts)
+
+	kafkaRecipeNotificationReader, _ := kafka.NewReader[models.RecipeNotification](
+		cfg.Kafka.Hosts,
+		models.NotificationConsumerGroup,
+		models.RecipeEventKafkaTopic,
+		func(notification models.RecipeNotification) {
+			logger.Warn("error on consuming notification")
+		},
+	)
+
 	srvs := services.New(logger, cfg)
-	prcs := appProcessors.NewProcessor(kafkaRecipeWriter)
+	prcs := appProcessors.NewProcessor(kafkaNotificationWriter, logger)
 
 	return &Container{
-		Config:     cfg,
-		Log:        logger,
-		Processors: prcs,
-		Services:   srvs,
+		Config:                   cfg,
+		Log:                      logger,
+		Processors:               prcs,
+		Services:                 srvs,
+		RecipeNotificationReader: kafkaRecipeNotificationReader,
 	}
 }

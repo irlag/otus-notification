@@ -32,6 +32,7 @@ func init() {
 
 	consoleCmd.AddCommand(apiServer)
 	consoleCmd.AddCommand(version)
+	consoleCmd.AddCommand(comsumeNotification)
 }
 
 func Execute() {
