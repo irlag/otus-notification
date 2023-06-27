@@ -1,7 +1,12 @@
 package models
 
+import "encoding/json"
+
+const (
+	NotificationConsumerGroup = "otus.notification"
+)
+
 type Notification interface {
-	MarshalJSON() ([]byte, error)
-	UnmarshalJSON(data []byte) error
+	json.Marshaler
 	GetEventTopic() string
 }

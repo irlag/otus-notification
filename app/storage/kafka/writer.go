@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"log"
 
 	"github.com/segmentio/kafka-go"
 
@@ -13,13 +12,10 @@ type Writer[T models.Notification] struct {
 	writer *kafka.Writer
 }
 
-func NewWriter[T models.Notification](addr string) (Writer[T], func() error) {
+func NewWriter[T models.Notification](hosts string) (Writer[T], func() error) {
 	w := &kafka.Writer{
-		Addr:     kafka.TCP(addr),
+		Addr:     kafka.TCP(hosts),
 		Balancer: &kafka.LeastBytes{},
-		Logger: kafka.LoggerFunc(func(format string, args ...interface{}) {
-			log.Printf("Kafka writer: "+format, args...)
-		}),
 	}
 
 	return Writer[T]{writer: w}, w.Close
